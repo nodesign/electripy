@@ -2,7 +2,7 @@ PYTHON HEADER
 
 ### 
 #
-# Electripy, physical IO HAL library for Python
+# Electripy, HAL library for Python
 #
 # Library was originally created for WeIO, www.we-io.net
 # and than forked as a separate project in order to promote
