@@ -2,10 +2,11 @@ PYTHON HEADER
 
 ### 
 #
-# Electripy, HAL library for Python
+# Electripy, physical IO HAL library for Python
+#
 # Library was originally created for WeIO, www.we-io.net
-# and than extracted as separate project to promote concept
-# of using interpreted languages in microcontrolers.
+# and than forked as a separate project in order to promote
+# concept of using interpreted languages in microcontrolers.
 # 
 # This library is common effort of their original creators
 # Uros PETREVSKI, Drasko DRASKOVIC and 8devices team
