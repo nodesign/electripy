@@ -35,8 +35,8 @@
 ###
 
 from boards.uper import uperSimulator as uper
-from lib.electripyUserApi import shared, pins, adcs, pwms, HIGH, LOW, INPUT_HIGHZ, INPUT_PULLDOWN, INPUT_PULLUP, OUTPUT, ADC_INPUT, PWM_OUTPUT, PWM0_OUTPUT, PWM1_OUTPUT
-from lib.electripyUserApi import CHANGE, RISING, FALLING, HARD_INTERRUPTS
+#from boards.weio import pins, adcs, pwms, HIGH, LOW, INPUT_HIGHZ, INPUT_PULLDOWN, INPUT_PULLUP, OUTPUT, ADC_INPUT, PWM_OUTPUT, PWM0_OUTPUT, PWM1_OUTPUT, CHANGE, RISING, FALLING, HARD_INTERRUPTS
+from boards.weio import *
 import os
 
 class ElectripyGpio():
