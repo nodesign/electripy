@@ -1,335 +1,262 @@
-#!/usr/bin/env python
-# encoding: utf-8
+### 
+#
+# Electripy, HAL library for Python
+#
+# Library was originally created for WeIO, www.we-io.net
+# and than forked as a separate project in order to promote
+# concept of using interpreted languages in microcontrolers.
+# 
+# This library is common effort of their original creators
+# Uros PETREVSKI, Drasko DRASKOVIC and 8devices team
+#              _           _        _             
+#          ___| | ___  ___| |_ _ __(_)_ __  _   _ 
+#         / _ \ |/ _ \/ __| __| '__| | '_ \| | | |
+#        |  __/ |  __/ (__| |_| |  | | |_) | |_| |
+#         \___|_|\___|\___|\__|_|  |_| .__/ \__, |
+#                                    |_|    |___/ 
+#
+#           Hardware Abstraction Layer Library
+#                       for Python
+#
+# This file is part of Electripy
+# Electripy is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Electripy is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# Authors : 
+# Uros PETREVSKI <uros@nodesign.net>
+# Drasko DRASKOVIC <drasko.draskovic@gmail.com>
+#
+###
 
-__version__ = "0.03"
+import uperDriver
 
-import struct, serial, threading, Queue, time, types, os, glob, urllib, urllib2
+HARD_INTERRUPTS = 8
 
-class Upgrader:
+""" Dummy board for testing purposes """
+class Board():
     def __init__(self):
-        return
-
-    def puttoFile(self, content, file_name):
-        try:
-            file_id = os.open(file_name, os.O_WRONLY)
-            os.write(file_id, content)
-            os.close(file_id)
-        except OSError:
-            pass
-
-    def resetUper(self):
-        self.puttoFile("1","/sys/class/gpio/gpio22/value")
-        self.puttoFile("0","/sys/class/gpio/gpio22/value")
-
-    def upgradeFirmware(self, fwUrl = "https://github.com/8devices/UPER/raw/master/dist/UPER-Release.bin"):
-        acm_interface = "/dev/ttyACM0"
-        sd_devices = "/dev/sd*"
-        fw_file = "/tmp/latest_UPER_firmware.bin"
-        UPER_flash_pattern = "CRP DISABLD"
-        new_dev_list = []
-
-        # put UPER1 in to programming mode
-        self.puttoFile("22","/sys/class/gpio/export") # 14'th Carambola2 dev bord pin - reset on UPER
-        self.puttoFile("23","/sys/class/gpio/export") # 15'th Carambola2 dev bord pin - prog on UPER
-        self.puttoFile("out","/sys/class/gpio/gpio22/direction")
-        self.puttoFile("out","/sys/class/gpio/gpio23/direction")
-        self.puttoFile("1","/sys/class/gpio/gpio22/value")
-        self.puttoFile("1","/sys/class/gpio/gpio23/value")
-        self.puttoFile("0","/sys/class/gpio/gpio22/value")
-        time.sleep(2) # wait for linux to settle after UPER reboot in to pgm state
-        self.puttoFile("0","/sys/class/gpio/gpio23/value")
-
-        # find UPER1 block device
-        list_block_devs = glob.glob("/sys/block/sd*")
-        block_device_name = ''
-        header = ''
-        for try_device_name in list_block_devs:
-            try_device_name = "/dev/" + try_device_name.split('/')[-1]
-            try:
-                block_device = os.open(try_device_name, os.O_RDWR)
-                os.lseek(block_device, 3 * 512, os.SEEK_SET)
-                header = os.read(block_device,11)
-                os.close(block_device)
-            except OSError:
-                pass
-            if header == UPER_flash_pattern: # "CRP DISABLD"
-                #found UPER
-                block_device_name = try_device_name
-                break;
-        if block_device_name == '':
-            print "UPER firmware upgrade error, no UPPER board found"
-            return
-
-        # download firmware file 
-        print fwUrl
-        try:
-            req = urllib2.Request(fwUrl)
-            handle = urllib2.urlopen(req)
-        except urllib2.HTTPError, e:
-            print "UPER: Can't download firmware, error code - %s." % e.code
-            self.resetUper()
-            return
-        except urllib2.URLError:
-            print "UPER: Bad URL for firmware file: %s" % fwUrl
-            self.resetUper()
-            return
-        else:
-            urllib.urlretrieve(fwUrl, fw_file + '.new')
-            if os.path.isfile(fw_file + '.new'):
-                os.rename(fw_file + '.new', fw_file)
-
-        #os.system("dd if="+fw_file+" of="+new_dev_list[0]+" seek=4")
-
-        # read the fw from file    
-        fw_file_id = open(fw_file)
-        firmware = fw_file_id.read()
-        fw_file_id.close()
-
-        block_device = os.open( block_device_name, os.O_RDWR)
-        os.lseek(block_device, 4 * 512, os.SEEK_SET)
-        os.write(block_device, firmware)
-        os.close(block_device)
-
-        # reset UPER
-        self.resetUper()
-        time.sleep(2)
-        return
-
-class Readers:
-    def __init__(self, serial, outq, callback, decodefun):
-        self.serial = serial
-        self.outq = outq
-        self.callback = callback
-        self.alive = True
-        self.thread_read = threading.Thread(target=self.reader)
-        self.thread_read.setDaemon(1)
-        self.thread_read.start()
-        self.decodefun = decodefun
-
-    def reader(self):
-        while self.alive:
-            try:
-                data = self.serial.read(1)            #read one, blocking
-                n = self.serial.inWaiting()            #look if there is more
-                if n:
-                    data = data + self.serial.read(n)    #and get as much as possible
-                if data:
-                    if data[3] == '\x08':
-                        interrupt = self.decodefun(data)
-                        self.callback(interrupt)
-                    else:
-                        #print ":".join("{:02x}".format(ord(c)) for c in data)
-                        self.outq.put(data)
-            except RuntimeError:
-                print "UPER API: serial port reading error!!!"
-                break
-        self.alive = False
+        self.uper = uperDriver.UPER(self.mainInterrupt)
+            
+        shared.declaredPins = []
+        for i in range(0,len(pins)):
+            shared.declaredPins.append(-1)
+        
+        self.pwm0PortPeriod = 1000
+        self.pwm1PortPeriod = 1000
+        
+        self.pwm0Limit = 255
+        self.pwm1Limit = 255
+        
+        self.pwm0BeginCalled = False
+        self.pwm1BeginCalled = False
+        
+        
+        self.interrupts = []
+        for i in range(0, HARD_INTERRUPTS):
+            # 1 is available
+            self.interrupts.append(None)
     
-    def stop(self):
-        if self.alive:
-            self.alive = False
-            self.thread_read.join()
-
-class UPER:       
-    def stop(self):
-        for i in range(7):
-            self.detachInterrupt(i)
-        self.reader.stop()
-        self.ser.close()
-
-    def encodeINT(self, intarg):
-        if intarg < 64:
-            return(chr(intarg))
-        packedint = struct.pack( '>I', intarg ).lstrip('\x00')
-        return(chr(0xc0 | (len(packedint) -1)) + packedint)
-
-    def encodeBYTES(self, bytestr):
-        if len( bytestr ) < 64:
-            return (chr(0x40 | len(packedint)) + bytestr)
-        packedlen = struct.pack( '>I', len(bytestr)).lstrip('\x00')
-        if len(packedlen) == 1:
-            return('\xc4'+packedlen+bytestr)
-        elif len(pakedlen) == 2:
-            return('\xc5' + packedlen + bytestr)
+    #print "Hello from GPIO"
+    
+    def mainInterrupt(self, data):
+        myid = data[1][0]
+        for inter in self.interrupts:
+            if inter.myid == myid:
+                inter.callback(data[1][1])
+                break
+    
+    def inputMode(self, pin, mode):
+        """Sets input mode for digitalRead purpose. Available modes are: 
+        INPUT_HIGHZ, INPUT_PULLDOWN, INPUT_PULLUP"""
+        self.uper.setPrimary(pins[pin])
+        self.uper.pinMode(pins[pin], mode)
+        shared.declaredPins[pin] = mode
+    
+    def digitalWrite(self,pin, state):
+        """Sets voltage to +3.3V or Ground on corresponding pin. This function takes
+        two parameters : pin number and it's state that can be HIGH = +3.3V or LOW = Ground"""
+        if shared.declaredPins[pin] != OUTPUT:
+            self.uper.setPrimary(pins[pin])
+            self.uper.pinMode(pins[pin], OUTPUT)
+            shared.declaredPins[pin] = OUTPUT
+        
+        self.uper.digitalWrite(pins[pin], state)
+    
+    def digitalRead(self,pin):
+        """Reads actual voltage on corresponding pin. There are two possible answers:
+        0 if pin is connected to the Ground or 1 if positive voltage is detected"""
+        if (shared.declaredPins[pin] != INPUT_HIGHZ) and (shared.declaredPins[pin] != INPUT_PULLUP) and (shared.declaredPins[pin] != INPUT_PULLDOWN) :
+            self.uper.setPrimary(pins[pin])
+            self.uper.pinMode(pins[pin], INPUT_HIGHZ)
+            shared.declaredPins[pin] = INPUT_HIGHZ
+        
+        return self.uper.digitalRead(pins[pin])
+    
+    def analogRead(self, pin):
+        """Reads input on specified Analog to Digital Convertor. ADC is available on pins from
+        25 to 32 Output is 10bits resolution or from 0-1023"""
+        if ((pin >= adcs[0]) and (pin <= adcs[-1])):
+            if shared.declaredPins[pin] != ADC_INPUT:
+                self.uper.setSecondary(pins[pin])
+                shared.declaredPins[pin] = ADC_INPUT
+            
+            adcPin = adcs.index(pin)
+            return self.uper.analogRead(adcPin)
         else:
-            print "UPER API: error - too long string"
+            print "*SYSOUT*Error! Pin " + str(pin) + " is not ADC pin, ADCs are on pins 25-32!"
+            return -1           
+    
+    def pwmWrite(self, pin, value) :
+        """Pulse with modulation is available at 6 pins from 19-24 and has 16bits of precision.
+        By default WeIO sets PWM frequency at 20000ms and 8bit precision or from 0-255.
+        This setup is well situated for driving LED lighting. Precision and frequency can be changed
+        separately by calling additional functions for other uses : setPwmPeriod and setPwmLimit.
+        PWM can also drive two different frequencies on two separate banks of 3 pins.
+        For this feature look functions : setPwmPeriod0, setPwmPeriod1, setPwmLimit0 and setPwmLimit1."""
+        if ((pin >= pwms[0]) and (pin <= pwms[2])):
+            #port0
+            if shared.declaredPins[pin] != PWM0_OUTPUT:
+                self.uper.setSecondary(pins[pin])
+                #print "DECLARED pin ", pin, " called ", pins[pin]
+                if self.pwm0BeginCalled is False:
+                    self.uper.pwm0_begin(self.pwm0PortPeriod)
+                    self.pwm0BeginCalled = True
+                
+                shared.declaredPins[pin] = PWM0_OUTPUT
+            
+            pwmPin = pwms.index(pin)
+            
+            # Security limiters
+            if (value < 0) :
+                value = self.pwm0Limit
+            if (value > self.pwm0Limit):
+                value = 0
+            
+            out = self.proportion(value, 0, self.pwm0Limit, self.pwm0PortPeriod, 0)
+            self.uper.pwm0_set(pwmPin, int(out))
+        #print "PWM on ", pwmPin, " value ", out
+        
+        elif ((pin >= pwms[3]) and (pin <= pwms[-1])):
+            #port1
+            if shared.declaredPins[pin] != PWM1_OUTPUT:
+                self.uper.setSecondary(pins[pin])
+                if self.pwm1BeginCalled is False:
+                    self.uper.pwm1_begin(self.pwm1PortPeriod)
+                    self.pwm1BeginCalled = True
+                
+                shared.declaredPins[pin] = PWM1_OUTPUT
+            #print "PWM index ", pwms.index(pin)
+            pwmPin = abs(3-pwms.index(pin))
+            
+            # Security limiters
+            if (value < 0) :
+                value = self.pwm0Limit
+            if (value > self.pwm0Limit):
+                value = 0
+            
+            out = self.proportion(value, 0, self.pwm1Limit, self.pwm1PortPeriod, 0)
+            self.uper.pwm1_set(pwmPin, int(out))
+        #print "PWM on ", pwmPin, " value ", out
+        
+        else:
+            print "*SYSOUT*Error! Pin " + str(pin) + " is not PWM pin, PWMs are on pins 19-24!"
+    
+    def proportion(self, value,istart,istop,ostart,ostop) :
+        return float(ostart) + (float(ostop) - float(ostart)) * ((float(value) - float(istart)) / (float(istop) - float(istart)))
+    
+    def setPwm0PortPeriod(self, period):
+        if ((period >= 0) and (period <= 65535)): 
+            self.pwm0PortPeriod = period
+            if self.pwm0BeginCalled is False:
+                self.uper.pwm0_begin(self.pwm0PortPeriod)
+                self.pwm0BeginCalled = True
+        else :
+            print "*SYSOUT*Error! PWM period can be only between 0-65535"
+    
+    def setPwm1PortPeriod(self, period):
+        if ((period >= 0) and (period <= 65535)): 
+            self.pwm1PortPeriod = period
+            if self.pwm1BeginCalled is False:
+                self.uper.pwm1_begin(self.pwm1PortPeriod)
+                self.pwm1BeginCalled = True
+        else :
+            print "*SYSOUT*Error! PWM period can be only between 0-65535"
+    
+    def setPwmPeriod(self, period):
+        """Overrides default value of 20000ms to set new period value for whole 6 PWM pins.
+        Period value must be superior than 0 and inferior than 65535."""
+        if ((period >= 0) and (period <= 65535)): 
+            self.pwm0PortPeriod = period
+            self.pwm1PortPeriod = period
+            
+            if self.pwm0BeginCalled is False:
+                self.uper.pwm0_begin(self.pwm0PortPeriod)
+                self.pwm0BeginCalled = True
+            
+            if self.pwm1BeginCalled is False:
+                self.uper.pwm1_begin(self.pwm1PortPeriod)
+                self.pwm1BeginCalled = True
+        
+        else :
+            print "*SYSOUT*Error! PWM period can be only between 0-65535"
+    
+    def setPwm0Limit(self, limit):
+        if ((limit > 0) and (limit <= self.pwm0PortPeriod)):
+            self.pwm0Limit = limit
+        else:
+            print "*SYSOUT*Error! PWM limit can't be superior than " + self.pwm0PortPeriod + " , 0 or inferior than 0"
+    
+    def setPwm1Limit(self, limit):
+        if ((limit > 0) and (limit <= self.pwm1PortPeriod)):
+            self.pwm1Limit = limit
+        else:
+            print "*SYSOUT*Error! PWM limit can't be superior than " + self.pwm1PortPeriod + " , 0 or inferior than 0"
+    
+    def setPwmLimit(self, limit):
+        """Overrides default limit of 8bits for PWM precision. This value sets PWM counting
+        upper limit and it's expressed as decimal value. This limit will be applied to all 6 PWM pins.
+            """
+        if ((limit > 0) and (limit <= self.pwm0PortPeriod) and (limit <= self.pwm1PortPeriod)):
+            self.pwm0Limit = limit
+            self.pwm1Limit = limit
+        else:
+            print "*SYSOUT*Error! PWM limit can't be superior than " + min(self.pwm0PortPeriod, self.pwm1PortPeriod)  + " , 0 or inferior than 0"
+    
+    def attachInterrupt(self, pin, mode, callback):
+        myid = self.getAvailableInterruptId()
+        if not(myid is None) :
+            inter = Interrupt(myid, pin, mode, callback)
+            self.interrupts[myid] = inter
+            self.uper.attachInterrupt(myid, pins[pin], mode)
+    
+    def detachInterrupt(self, pin):
+        for m in self.interrupts:
+            if not(m is None):
+                if (m.pin==pin):
+                    #print "pin to be detached ", m.pin
+                    self.uper.detachInterrupt(m.myid)
+    
+    def getAvailableInterruptId(self):
+        for i in range(0,HARD_INTERRUPTS):
+            if self.interrupts[i] == None:
+                return i
+        print "*SYSOUT*Error! There is only " + str(HARD_INTERRUPTS) + " interrupts available" 
+        return None
 
-    def encodeSFP(self, command, args):
-        functions = { types.StringType : self.encodeBYTES, types.IntType : self.encodeINT }
-        SFPcommand = chr(command) + ''.join(functions[ type(arg) ]( arg ) for arg in args)
-        SFPcommand = '\xd4' + struct.pack('>H', len(SFPcommand)) + SFPcommand
-        return(SFPcommand)
 
-    def decodeSFP(self, buffer):
-        result = []
-        if buffer[0:1] != '\xd4':
-            return( result )
-        buflen = struct.unpack('>H', buffer[1:3])[0] + 3
-        result.append( struct.unpack('b', buffer[3:4])[0] )
-        pointer = 4
-        args = []
-        while pointer < buflen:
-            argtype = ord(buffer[pointer:pointer+1])
-            pointer +=1
-            if argtype < 64:                    #short int
-                args.append(argtype)
-            elif argtype < 128:                    #short str
-                arglen = argtype & 0x3f
-                args.append(buffer[pointer:pointer+arglen])
-                pointer += arglen
-            else:
-                arglen = argtype & 0x0f            #decoding integers
-                if arglen == 0:
-                    args.append(ord(buffer[pointer:pointer+1]))
-                elif arglen == 1:
-                    args.append(struct.unpack('>H', buffer[pointer:pointer+2])[0])
-                elif arglen == 2:
-                    args.append(struct.unpack('>I', '\x00' + buffer[pointer:pointer+3])[0])
-                elif arglen == 3:
-                    args.append(struct.unpack('>I', buffer[pointer:pointer+4])[0])
-                pointer += arglen + 1
-
-                if arglen == 4:
-                    arglen = ord(buffer[pointer:pointer+1])
-                    pointer += 1
-                    args.append(buffer[pointer:pointer+arglen])
-                    pointer += arglen
-                elif arglen == 5:
-                    arglen = struct.unpack('>H', buffer[pointer:pointer+2])[0]
-                    pointer += 2
-                    args.append(buffer[pointer:pointer+arglen])
-                    pointer += arglen
-        result.append(args)
-        return(result)
-
-    def UPER_IO(self, ret, buf):
-        self.ser.write(buf)
-        if ret == 0:
-            return
-        data = self.outq.get()
-        return(data)
-
-    def setPrimary(self, pinID):
-        self.UPER_IO(0, self.encodeSFP(1, [pinID]))
-
-    def setSecondary(self, pinID):
-        self.UPER_IO(0, self.encodeSFP(2, [pinID]))
-
-    def pinMode(self, pinID, pinMode):
-        self.UPER_IO(0, self.encodeSFP(3, [pinID, pinMode]))
-
-    def digitalWrite(self, pinID, value):
-        self.UPER_IO(0, self.encodeSFP(4, [pinID, value]))
-
-    def digitalRead(self, pinID):
-        return(self.decodeSFP(self.UPER_IO(1, self.encodeSFP( 5, [pinID])))[1][1])
-
-    def attachInterrupt(self, interruptID, pinID, mode):
-        self.UPER_IO(0, self.encodeSFP(6, [interruptID, pinID, mode])) 
-
-    def detachInterrupt(self, interruptID):
-        self.UPER_IO(0, self.encodeSFP(7, [interruptID])) 
-
-    def analogRead(self, analogPinID):
-        return(self.decodeSFP(self.UPER_IO(1, self.encodeSFP(10, [analogPinID])))[1][1])
-
-    def pwm0_begin(self, period):
-        #print "pwm0_begin period:", period
-        self.UPER_IO(0, self.encodeSFP(50, [period]))     
-
-    def pwm1_begin(self, period):
-        #print "pwm1_begin period:", period
-        self.UPER_IO(0, self.encodeSFP(60, [period])) 
-
-    def pwm0_set(self, channel, high_time):
-        #print "pwm0_set high_time:", high_time
-        self.UPER_IO(0, self.encodeSFP(51, [channel, high_time]))
-
-    def pwm1_set(self, channel, high_time):
-        #print "pwm1_set high_time:", high_time
-        self.UPER_IO(0, self.encodeSFP(61, [channel, high_time]))
-
-    def pwm0_end(self):
-        self.UPER_IO(0, self.encodeSFP(52, []))
-
-    def pwm1_end(self):
-        self.UPER_IO(0, self.encodeSFP(62, []))
-
-    def spi0_begin(self, divider, mode):
-        self.UPER_IO(0, self.encodeSFP(20, [divider, mode]))
-
-    def spi0_trans(self, data, respond):
-        return(self.decodeSFP(self.UPER_IO(1, self.encodeSFP(21, [data, respond])))[1][0])
-
-    def spi0_end(self):
-        self.UPER_IO(0, self.encodeSFP( 22, []))
-         
-    def i2c_begin(self):
-        self.UPER_IO(0, self.encodeSFP(40, []))
-
-    def i2c_trans(self, address, writeData, readLength):
-        return(self.decodeSFP(self.UPER_IO(1, self.encodeSFP(41, [address, writeData, readLength]))))
-
-    def i2c_end(self):
-        self.UPER_IO(0, self.encodeSFP( 42, []))
-
-    def registerWrite(self, registerAddress, value):
-        self.UPER_IO(0, self.encodeSFP(100, [registerAddress, value]))
-
-    def registerRead(self, registerAddress):
-        return(self.decodeSFP(self.UPER_IO(1, self.encodeSFP(101, [registerAddress])))[1][1])
-
-    def getDeviceInfo(self):
-        device_info = []
-        result = self.decodeSFP(self.UPER_IO(1, self.encodeSFP(255, [])))
-        if result[0] != -1:
-            print "UPER error: getDeviceInfo wrong code."
-            return
-        result = result[1]
-        if result[0] >> 24 != 0x55: # 0x55 == 'U'
-            print "UPER error, getDeviceInfo unknown device/firmware type"
-            return
-        device_info.append("UPER") # type
-        device_info.append((result[0] & 0x00ff0000) >> 16) #fw major
-        device_info.append(result[0] & 0x0000ffff) #fw minor
-        device_info.append(result[1]) # 16 bytes long unique ID from UPER CPU
-        device_info.append(result[2]) # UPER LPC CPU part number
-        device_info.append(result[3]) # UPER LPC CPU bootload code version
-        return(device_info)
-
-    def internalCallBack(intdata):
-        #print"default CallBack is working %r" % intdata
-        return
-
-    def __init__(self, callbackfun = internalCallBack, serial_port = "/dev/ttyACM0"):
-        self.ser = serial.Serial(
-        port=serial_port,
-        baudrate=1, #virtual com port on USB is always max speed
-        parity=serial.PARITY_ODD,
-        stopbits=serial.STOPBITS_ONE,
-        bytesize=serial.EIGHTBITS,
-        timeout = 0.1
-        )
-        self.ser.flushInput()
-        self.outq = Queue.Queue()
-        self.callbackfun = callbackfun
-        self.reader = Readers(self.ser, self.outq, self.callbackfun, self.decodeSFP)
-
-if __name__ == '__main__':
-    """
-    print " Will init UPER1 and read ADC, upgrade firmware and read device info."
-    u = UPER()
-    u.setSecondary(30)
-    print "analogRead = %x" % u.analogRead(3)
-    u.stop()
-    """
-    upgrader = Upgrader()
-    upgrader.upgradeFirmware()
-    del upgrader
-    """
-    uu = UPER()
-    dev_info = uu.getDeviceInfo()
-    print "%r" % dev_info
-    uu.stop()
-    """
-
+class Interrupt():
+    def __init__(self, myid, pin, mode, callback):
+        self.myid = myid
+        self.pin = pin
+        self.mode = mode
+        self.callback = callback
