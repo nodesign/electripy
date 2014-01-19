@@ -42,4 +42,16 @@
     This module holds all global variable definitions.
     These globals can be imported, used and shared between all the modules of the library
 """
-electripyBoard = ElectripyBoard()
+
+###
+# Global Macros
+###
+HIGH = 1
+LOW = 0
+
+###
+# Global board
+###
+from boards.dummy import dummy
+
+board = dummy.DummyBoard()
