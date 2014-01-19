@@ -16,8 +16,10 @@ def mainInterrupt(data):
     # do some pre-init
 
     # Check if the board implements this function
-    if (board.mainInterrupt != None):
+    if hasattr(board, 'mainInterrupt'):
         result = board.mainInterrupt(data)
+    else:
+        print "electripyError: Board %s has no function mainInterrupt()" % board.name
     
     # do some post-init
     
@@ -25,97 +27,99 @@ def mainInterrupt(data):
 
 def inputMode(pin, mode):
     result = None
-    if (board.inputMode != None):
+    if hasattr(board, 'inputMode'):
         result = board.inputMode(pin, mode)
     return result
             
 def digitalWrite(pin, state):
     res = None
-    if (board.digitalWrite != None):
+    if hasattr(board, 'digitalWrite'):
         res = board.digitalWrite(pin, state)
     return res
     
 def digitalRead(pin):
     res = None
-    if (board.digitalRead != None):
+    if hasattr(board, 'digitalRead'):
         res = board.digitalRead(pin)
     return res
     
 def analogRead(pin):
     res = None
-    if (board.analogRead != None):
+    if hasattr(board, 'analogRead'):
         res = board.analogRead(pin)
     return res
     
 def pwmWrite(pin, value):
     res = None
-    if (board.pwmWrite != None):
+    if hasattr(board, 'pwmWrite'):
         res = board.pwmWrite(pin, value)
+    else:
+        print "electripyError: Board %s has no function pwmWrite()" % board.name
     return res
 
 def analogWrite(pin, value):
     """Defining synonime of pwmWrite to match arduino syntax"""
     res = None
-    if (board.pwmWrite != None):
+    if hasattr(board, 'pwmWrite'):
         res = board.pwmWrite(pin, value)
 
 def proportion(value, istart, istop, ostart, ostop):
     res = None
-    if (board.proportion != None):
+    if hasattr(board, 'proportion'):
         res = board.proportion(value, istart, istop, ostart, ostop)
     return res
     
 def setPwm0PortPeriod(period):
     res = None
-    if (board.setPwm0PortPeriod != None):
+    if hasattr(board, 'setPwm0PortPeriod'):
         res = board.setPwm0PortPeriod(period)
     return res
 
 def setPwm1PortPeriod(period):
     res = None
-    if (board.setPwm1PortPeriod != None):
+    if hasattr(board, 'setPwm1PortPeriod'):
         res = board.setPwm1PortPeriod(period)
     return res
 
 def setPwmPeriod(period):
     res = None
-    if (board.setPwmPeriod):
+    if hasattr(board, 'setPwmPeriod'):
         res = board.setPwmPeriod(period)
     return res
 
 def setPwm0Limit(limit):
     res = None
-    if (board.setPwm0Limit != None):
+    if hasattr(board, 'setPwm0Limit'):
         res = board.setPwm0Limit(limit)
     return res
 
 def setPwm1Limit(limit):
     res = None
-    if (board.setPwm1Limit):
+    if hasattr(board, 'setPwm1Limit'):
         res = board.setPwm1Limit(limit)
     return res
 
 def setPwmLimit(limit):
     res = None
-    if (board.setPwmLimit):
+    if hasattr(board, 'setPwmLimit'):
         res = board.setPwmLimit(limit)
     return res
 
 def attachInterrupt(pin, mode, callback):
     res = None
-    if (board.attachInterrupt != None):
+    if hasattr(board, 'attachInterrupt'):
         res = board.attachInterrupt(pin, mode, callback)
     return res
 
 def detachInterrupt(pin):
     res = None
-    if (board.detachInterrupt != None):
+    if hasattr(board, 'detachInterrupt'):
         res = board.detachInterrupt(pin)
     return res
 
 def getAvailableInterruptId():
     res = None
-    if (board.getAvailableInterruptId):
+    if hasattr(board, 'getAvailableInterruptId'):
         res = board.getAvailableInterruptId()
     return res
 

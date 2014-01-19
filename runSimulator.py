@@ -20,19 +20,19 @@ digitalRead(12)
 
 # PWM test
 # print "**************************"
-#a.pwmWrite(18, 255)
+pwmWrite(18, 255)
 # print "**************************"
 #a.pwmWrite(19, 255)
 # print "**************************"
-#a.pwmWrite(22, 128)
+pwmWrite(22, 128)
 # print "**************************"
-# a.pwmWrite(22, 15)
+pwmWrite(22, 15)
 # print "**************************"
-# a.pwmWrite(23, 4000)
+pwmWrite(23, 4000)
 # print "**************************"
-# a.pwmWrite(24, -15)
+pwmWrite(24, -15)
 # print "**************************"
-# a.setPwmPeriod(20000)
+setPwmPeriod(20000)
 # print "fade out"
 # for i in xrange(0,256):
 #     a.pwmWrite(19,i)
