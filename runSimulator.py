@@ -1,31 +1,30 @@
-from lib.electripyGpio import ElectripyGpio
-from lib.electripyUserApi import *
+from lib.electripyIO import *
+from lib.electripyGlobals import *
 
-a = ElectripyGpio()
 # GPIO TEST
 
 # print "**************************"
-# a.digitalWrite(12,HIGH)
+digitalWrite(12,HIGH)
 # print "**************************"
-# a.digitalWrite(12,LOW)
+digitalWrite(12,LOW)
 # print "**************************"
-# a.digitalWrite(12,HIGH)
+digitalWrite(12,HIGH)
 # print "**************************"
-# a.digitalWrite(13,HIGH)
+digitalWrite(13,HIGH)
 # print "**************************"
-# a.digitalWrite(13,LOW)
+digitalWrite(13,LOW)
 # print "**************************"
-# a.digitalRead(12)
+digitalRead(12)
 # print "**************************"
 
 
 # PWM test
 # print "**************************"
-a.pwmWrite(18, 255)
+#a.pwmWrite(18, 255)
 # print "**************************"
-a.pwmWrite(19, 255)
+#a.pwmWrite(19, 255)
 # print "**************************"
-a.pwmWrite(22, 128)
+#a.pwmWrite(22, 128)
 # print "**************************"
 # a.pwmWrite(22, 15)
 # print "**************************"
