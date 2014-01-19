@@ -53,5 +53,7 @@ LOW = 0
 # Global board
 ###
 from boards.dummy import dummy
+#from boards.uper import uper
 
-board = dummy.DummyBoard()
+board = dummy.Board()
+#board = uper.Board()

@@ -39,7 +39,7 @@
 ###
 
 """ Dummy board for testing purposes """
-class DummyBoard():
+class Board():
     def __init__(self):
         self.name = 'dummy'
 
