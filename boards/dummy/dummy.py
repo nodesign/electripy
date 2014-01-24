@@ -44,6 +44,8 @@
 #
 ###
 
+from wirings import *
+
 """ Dummy board for testing purposes """
 class Board():
     def __init__(self):
@@ -57,3 +59,6 @@ class Board():
     
     def analogRead(self, pin):
         print "dummyBoard.analogRead(pin) has been called with parameter: %d" % pin
+        
+    def getBoardName(self):
+        return self.name

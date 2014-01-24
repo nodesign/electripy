@@ -43,64 +43,106 @@
 # Drasko DRASKOVIC <drasko.draskovic@gmail.com>
 #
 ###
+#################################
+# WeIO Pin and Global definitions
+#################################
+HIGH = 1
+LOW = 0
 
-"""
-    This module holds all global variable definitions.
-    These globals can be imported, used and shared between all the modules of the library
-"""
+INPUT_PULLUP = 4
+INPUT_PULLDOWN = 2
+INPUT_HIGHZ = 0
+INPUT_ADC = 5
+OUTPUT = 1
+PWM0_OUTPUT = 6
+PWM1_OUTPUT = 7
+OUTPUT_PWM = 8
 
-###
-# Global board
-###
-from boards.weio import weio
-from boards.weio import wirings
-#from boards.uper import uper
+# This is remapping of uper pinouts to WeIO pinouts
+#         UPER  FUNC   WEIO
+pins = []
+pins.append(20) #RX     0
+pins.append(19) #TX     1
 
-#board = dummy.Board("/dev/ttyACM0")
-targetBoard = weio.Board()
+pins.append(13) #MOSI 0 2
+pins.append(12) #MISO 0 3
+pins.append(14) #SCK  0 4
 
-#board = uper.Board()
+pins.append(5)  #MOSI 1 5
+pins.append(11) #MISO 1 6
+pins.append(4)  #SCK  1 7
 
-###
-# Global Macros
-###
-HIGH = wirings.HIGH
-LOW = wirings.LOW
+## !!!VERIFY i2c not correct!!!
+pins.append(34)  #SDA    8
+pins.append(35)  #SCL    9
+##
 
-INPUT_PULLUP = wirings.INPUT_PULLUP
-INPUT_PULLDOWN = wirings.INPUT_PULLDOWN 
-INPUT_HIGHZ = wirings.INPUT_HIGHZ
-INPUT_ADC = wirings.INPUT_ADC
-OUTPUT = wirings.OUTPUT
-OUTPUT_PWM = wirings.OUTPUT_PWM
+pins.append(1)  #GPIO   10
+pins.append(21) #GPIO   11
+pins.append(0)  #GPIO   12
+pins.append(18) #GPIO   13
+pins.append(16) #GPIO   14
+pins.append(27) #GPIO   15
+pins.append(6)  #GPIO   16
+pins.append(3)  #GPIO   17
+pins.append(9)  #GPIO   18
+pins.append(29) #PWM 0  19
+pins.append(28) #PWM 0  20
+pins.append(22) #PWM 0  21
+pins.append(7)  #PWM 1  22
+pins.append(17) #PWM 1  23
+pins.append(2)  #PWM 1  24
+pins.append(33) #AD0    25
+pins.append(32) #AD1    26
+pins.append(31) #AD2    27
+pins.append(30) #AD3    28
+pins.append(26) #AD4    29
+pins.append(25) #AD5    30
+pins.append(24) #AD6    31
+pins.append(23) #AD7    32
+
+# WeIO adc pins
+adcs = []
+adcs.append(25)
+adcs.append(26)
+adcs.append(27)
+adcs.append(28)
+adcs.append(29)
+adcs.append(30)
+adcs.append(31)
+adcs.append(32)
+
+# WeIO pwm pins
+pwms = []
+pwms.append(19)
+pwms.append(20)
+pwms.append(21)
+pwms.append(22)
+pwms.append(23)
+pwms.append(24)
 
 # Value is in microseconds
-PWM_PERIOD = wirings.PWM_PERIOD
+PWM_PERIOD = 1000
 # This is constant of maximum PXM period limit
-PWM_PERIOD_LIMIT_CONST = wirings.PWM_PERIOD_LIMIT_CONST
+PWM_PERIOD_LIMIT_CONST = 65535
 # make sure that this value is always inferior to PWM_PERIOD
-PWM_LIMIT = wirings.PWM_LIMIT
-
-
-# GPIOs, all pins go here
-pins = wirings.pins
-
-# ADC pins
-adcs = wirings.adcs
-
-# PWM pins
-pwms = wirings.pwms
+PWM_LIMIT = 255
 
 # Interrupt modes
 # HIGH and LOW were already declared
 # LOW 0 
 # HIGH 1
-CHANGE = wirings.CHANGE
-RISING = wirings.RISING
-FALLING = wirings.FALLING
+CHANGE = 2
+RISING = 3
+FALLING = 4
 
 # number of hard interrupts
-HARD_INTERRUPTS = wirings.HARD_INTERRUPTS
+HARD_INTERRUPTS = 8
 
-# String as response from controler
-interruptType = wirings.interruptType
+# interrupt types
+interruptType = []
+interruptType.append("LOW")
+interruptType.append("HIGH")
+interruptType.append("CHANGE")
+interruptType.append("RISING")
+interruptType.append("FALLING")

@@ -50,125 +50,167 @@ import time
 # User API functions for GPIO
 ###
 
-def mainInterrupt(data):
-    """ Do following stuff:
-    1) mainInterrupt pre-call generic stuff (generic stuff before calling board's driver IO)
-    2) call board driver's IO function (custom for every board)
-    3) mainInterrupt post-call generic stuff
-    """
-    result = None
+class ElectripyIO():
     
-    # do some pre-init
-
-    # Check if the board implements this function
-    if hasattr(board, 'mainInterrupt'):
-        result = board.mainInterrupt(data)
-    else:
-        print "electripyError: Board %s has no function mainInterrupt()" % board.name
-    
-    # do some post-init
-    
-    return result
-
-def inputMode(pin, mode):
-    result = None
-    if hasattr(board, 'inputMode'):
-        result = board.inputMode(pin, mode)
-    return result
+    def __init__(self):
+        self.board = targetBoard
             
-def digitalWrite(pin, state):
-    res = None
-    if hasattr(board, 'digitalWrite'):
-        res = board.digitalWrite(pin, state)
-    return res
+        self.declaredPins = []
+        for i in range(0,len(pins)):
+            self.declaredPins.append(-1)
+        
+        
+        self.interrupts = []
+        for i in range(0, HARD_INTERRUPTS):
+            # 1 is available
+            self.interrupts.append(None)
     
-def digitalRead(pin):
-    res = None
-    if hasattr(board, 'digitalRead'):
-        res = board.digitalRead(pin)
-    return res
     
-def analogRead(pin):
-    res = None
-    if hasattr(board, 'analogRead'):
-        res = board.analogRead(pin)
-    return res
+    def mainInterrupt(self, data):
+        """ Do following stuff:
+        1) mainInterrupt pre-call generic stuff (generic stuff before calling board's driver IO)
+        2) call board driver's IO function (custom for every board)
+        3) mainInterrupt post-call generic stuff
+        """
+        result = None
     
-def pwmWrite(pin, value):
-    res = None
-    if hasattr(board, 'pwmWrite'):
-        res = board.pwmWrite(pin, value)
-    else:
-        print "electripyError: Board %s has no function pwmWrite()" % board.name
-    return res
+        # do some pre-init
 
-def analogWrite(pin, value):
-    """Defining synonime of pwmWrite to match arduino syntax"""
-    res = None
-    if hasattr(board, 'pwmWrite'):
-        res = board.pwmWrite(pin, value)
-
-def proportion(value, istart, istop, ostart, ostop):
-    res = None
-    if hasattr(board, 'proportion'):
-        res = board.proportion(value, istart, istop, ostart, ostop)
-    return res
+        # Check if the board implements this function
+        if hasattr(board, 'mainInterrupt'):
+            result = board.mainInterrupt(data)
+        else:
+            print "electripyError: Board %s has no function mainInterrupt()" % board.name
     
-def setPwm0PortPeriod(period):
-    res = None
-    if hasattr(board, 'setPwm0PortPeriod'):
-        res = board.setPwm0PortPeriod(period)
-    return res
+        # do some post-init
+    
+        return result
+        
+    def getBoardName(self):
+        return self.board.getBoardName()
 
-def setPwm1PortPeriod(period):
-    res = None
-    if hasattr(board, 'setPwm1PortPeriod'):
-        res = board.setPwm1PortPeriod(period)
-    return res
+    def pinMode(self, pin, mode):
+        result = None
+        if hasattr(self.board, 'pinMode'):
+            result = self.board.pinMode(pin, mode)
+            self.declaredPins[pin] = mode
+        return result
+            
+    def digitalWrite(self, pin, state):
+        res = None
+        if hasattr(self.board, 'digitalWrite'):
+            if self.declaredPins[pin] != OUTPUT:
+                self.board.pinMode(pin, OUTPUT)
+                self.declaredPins[pin] = OUTPUT
+    
+            res = self.board.digitalWrite(pin, state)
+        return res
+    
+    def digitalRead(self, pin):
+        res = None
+        if hasattr(self.board, 'digitalRead'):
+            # Force input mode (High Impedance) if input was not declared
+            if (self.declaredPins[pin] != INPUT_HIGHZ) and (self.declaredPins[pin] != INPUT_PULLUP) and (self.declaredPins[pin] != INPUT_PULLDOWN) :
+                self.board.pinMode(pin, INPUT_HIGHZ)
+                self.declaredPins[pin] = INPUT_HIGHZ
+            res = self.board.digitalRead(pin)
+        return res
+    
+    def analogRead(self, pin):
+        res = None
+        if hasattr(self.board, 'analogRead'):
+            if ((pin >= adcs[0]) and (pin <= adcs[-1])):
+                if self.declaredPins[pin] != INPUT_ADC:
+                    self.declaredPins[pin] = INPUT_ADC
+                    self.board.pinMode(pin, INPUT_ADC)
+                res = self.board.analogRead(pin)    
+            else:
+                print "Pin %d is not ADC pin" % pin           
+        return res
+    
+    def pwmWrite(self, pin, value):
+        res = None
+        if hasattr(self.board, 'pwmWrite'):
+            if (pin >= pwms[0]) and (pin <= pwms[-1]):
+                if self.declaredPins[pin] != OUTPUT_PWM:
+                    self.declaredPins[pin] = OUTPUT_PWM
+                    self.board.pinMode(pin, OUTPUT_PWM)
+                
+                # value limiters
+                if (value < 0) :
+                    value = 0
+                if (value > PWM_LIMIT):
+                    value = PWM_LIMIT
+                
+                # do proportion calculus
+                # People think in bit precision rather in microseconds. It's common to connect sensor outputs to pwm
+                # so we have to make a small proportion calculus here to make interface more friendly
+                # for example if period is 1000us and limit 255 (8bit), 1000 will be divided to 255 steps to drive pwm
+                out = self.proportion(value, 0, PWM_LIMIT, 0, PWM_PERIOD)
+                res = self.board.pwmWrite(pin, int(out))
+            else :
+                print "Pin %d is not PWM pin" % pin
+        else:
+            print "electripyError: Board %s has no function pwmWrite()" % self.board.name
+        return res
+    
+    def analogWrite(self, pin, value):
+        """Defining synonime of pwmWrite to match arduino syntax"""
+        res = None
+        if hasattr(self.board, 'pwmWrite'):
+            res = self.board.pwmWrite(pin, value)
+    
+    def setPwmPeriod(self, period):
+        res = None
+        if hasattr(self.board, 'setPwmPeriod'):
+            if ((period >= 0) and (period <= PWM_PERIOD_LIMIT_CONST)): 
+                PWM_PERIOD = int(period)
+                res = self.board.setPwmPeriod(period)
+            else :
+                print "electripyError: PWM period can be only between 0-" % PWM_PERIOD_LIMIT_CONST
+                
+        print "electripyError: Board %s has no function setPwmPeriod()" % self.board.name
+        return res
+        
+    def setPwmLimit(self, limit):
+        res = None
+        if hasattr(self.board, 'setPwmPeriod'):
+            if ((limit > 0) and (limit <= PWM_LIMIT)):
+                PWM_LIMIT = int(limit)
+            else :
+                print "electripyError: PWM period can be only between 1-" % PWM_PERIOD_LIMIT_CONST
+        print "electripyError: Board %s has no function setPwmLimit()" % self.board.name
+        return res
 
-def setPwmPeriod(period):
-    res = None
-    if hasattr(board, 'setPwmPeriod'):
-        res = board.setPwmPeriod(period)
-    return res
+    def setPwmPeriod(self, period):
+        res = None
+        if hasattr(self.board, 'setPwmPeriod'):
+            res = self.board.setPwmPeriod(period)
+        return res
 
-def setPwm0Limit(limit):
-    res = None
-    if hasattr(board, 'setPwm0Limit'):
-        res = board.setPwm0Limit(limit)
-    return res
+    def setPwmLimit(self, limit):
+        res = None
+        if hasattr(self.board, 'setPwmLimit'):
+            res = self.board.setPwmLimit(limit)
+        return res
 
-def setPwm1Limit(limit):
-    res = None
-    if hasattr(board, 'setPwm1Limit'):
-        res = board.setPwm1Limit(limit)
-    return res
+    def attachInterrupt(self, pin, mode, callback):
+        res = None
+        if hasattr(self.board, 'attachInterrupt'):
+            res = self.board.attachInterrupt(pin, mode, callback)
+        return res
 
-def setPwmLimit(limit):
-    res = None
-    if hasattr(board, 'setPwmLimit'):
-        res = board.setPwmLimit(limit)
-    return res
+    def detachInterrupt(self, pin):
+        res = None
+        if hasattr(self.board, 'detachInterrupt'):
+            res = self.board.detachInterrupt(pin)
+        return res
 
-def attachInterrupt(pin, mode, callback):
-    res = None
-    if hasattr(board, 'attachInterrupt'):
-        res = board.attachInterrupt(pin, mode, callback)
-    return res
-
-def detachInterrupt(pin):
-    res = None
-    if hasattr(board, 'detachInterrupt'):
-        res = board.detachInterrupt(pin)
-    return res
-
-def getAvailableInterruptId():
-    res = None
-    if hasattr(board, 'getAvailableInterruptId'):
-        res = board.getAvailableInterruptId()
-    return res
-
-def delay(period):
-    """Delay expressed in milliseconds. Delay will block current process. Delay can be evil"""
-    time.sleep(period/1000.0)
+    def delay(self, period):
+        """Delay expressed in milliseconds. Delay will block current process. Delay can be evil because is blocking function"""
+        time.sleep(period/1000.0)
+        
+    def proportion(self, value,istart,istop,ostart,ostop) :
+        """This is port of Processing map function. It's useful to make proportion calculation"""
+        return float(ostart) + (float(ostop) - float(ostart)) * ((float(value) - float(istart)) / (float(istop) - float(istart)))
 
