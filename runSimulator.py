@@ -7,17 +7,31 @@ epy = ElectripyIO()
 
 print "Board name : ", epy.getBoardName()
 
-print "PWM TEST **************************"
-while True :
-    for a in range(0,255):
-        epy.pwmWrite(19, a)
-        epy.delay(20)
-        print a
+# print "INTERRUPTS TEST **************************"
+# def hello(data):
+#     print "interrupt ", interruptType[data]
+# 
+# epy.attachInterrupt(25, LOW, hello)
+# 
+# for a in range(0,15):
+#     epy.delay(1000)
+#     print a
+#     
+# epy.detachInterrupt(25)
     
-    for a in range(0,255):
-        epy.pwmWrite(19, 255-a)
-        epy.delay(20)
-        print 255-a
+
+# 
+# print "PWM TEST **************************"
+# while True :
+#     for a in range(0,255):
+#         epy.pwmWrite(19, a)
+#         epy.delay(20)
+#         print a
+#     
+#     for a in range(0,255):
+#         epy.pwmWrite(19, 255-a)
+#         epy.delay(20)
+#         print 255-a
 
 # print "DIGITAL TEST **************************"
 # for a in range(0,10):

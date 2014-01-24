@@ -53,38 +53,45 @@ import time
 class ElectripyIO():
     
     def __init__(self):
-        self.board = targetBoard
+        self.board = targetBoard.Board(self.mainInterrupt)
             
         self.declaredPins = []
         for i in range(0,len(pins)):
             self.declaredPins.append(-1)
-        
-        
+            
         self.interrupts = []
         for i in range(0, HARD_INTERRUPTS):
             # 1 is available
             self.interrupts.append(None)
-    
-    
-    def mainInterrupt(self, data):
-        """ Do following stuff:
-        1) mainInterrupt pre-call generic stuff (generic stuff before calling board's driver IO)
-        2) call board driver's IO function (custom for every board)
-        3) mainInterrupt post-call generic stuff
-        """
-        result = None
-    
-        # do some pre-init
 
-        # Check if the board implements this function
-        if hasattr(board, 'mainInterrupt'):
-            result = board.mainInterrupt(data)
-        else:
-            print "electripyError: Board %s has no function mainInterrupt()" % board.name
-    
-        # do some post-init
-    
-        return result
+    def mainInterrupt(self, data):
+        myid = data[1][0]
+        for inter in self.interrupts:
+            if inter.myid == myid:
+                inter.callback(data[1][1])
+                break
+    # 
+    # def mainInterrupt(self, data):
+    #     """ Do following stuff:
+    #     1) mainInterrupt pre-call generic stuff (generic stuff before calling board's driver IO)
+    #     2) call board driver's IO function (custom for every board)
+    #     3) mainInterrupt post-call generic stuff
+    #     """
+    #     result = None
+    #     
+    #     #do some pre-init
+    # 
+    #     #Check if the board implements this function
+    #        
+    #     myid = data[1][0]
+    #     for inter in self.interrupts:
+    #        if inter.myid == myid:
+    #            inter.callback(data[1][1])
+    #            break
+    # 
+    #     #do some post-init
+    # 
+    #     return result
         
     def getBoardName(self):
         return self.board.getBoardName()
@@ -194,23 +201,46 @@ class ElectripyIO():
             res = self.board.setPwmLimit(limit)
         return res
 
+    def getAvailableInterruptId(self) :
+        for i in range(0,HARD_INTERRUPTS):
+            if self.interrupts[i] == None:
+                return i
+        print "weioBoard.getAvailableInterruptId, there is only %s interrupts available" % HARD_INTERRUPTS 
+        return None
+
     def attachInterrupt(self, pin, mode, callback):
         res = None
         if hasattr(self.board, 'attachInterrupt'):
-            res = self.board.attachInterrupt(pin, mode, callback)
+            myid = self.getAvailableInterruptId()
+            if not(myid is None) :
+                inter = Interrupt(myid, pin, mode, callback)
+                self.interrupts[myid] = inter
+                res = self.board.attachInterrupt(inter)
         return res
 
     def detachInterrupt(self, pin):
         res = None
         if hasattr(self.board, 'detachInterrupt'):
-            res = self.board.detachInterrupt(pin)
+            for m in self.interrupts:
+                if not(m is None):
+                    if (m.pin==pin):
+                        #print "pin to be detached ", m.pin
+                        res = self.board.detachInterrupt(m)
         return res
 
     def delay(self, period):
-        """Delay expressed in milliseconds. Delay will block current process. Delay can be evil because is blocking function"""
+        """Delay expressed in milliseconds. Delay can be evil because is blocking function"""
         time.sleep(period/1000.0)
         
     def proportion(self, value,istart,istop,ostart,ostop) :
         """This is port of Processing map function. It's useful to make proportion calculation"""
         return float(ostart) + (float(ostop) - float(ostart)) * ((float(value) - float(istart)) / (float(istop) - float(istart)))
+
+# This is class that stores all data regarding interrupt events
+class Interrupt():
+    def __init__(self, myid, pin, mode, callback):
+        self.myid = myid
+        self.pin = pin
+        self.mode = mode
+        self.callback = callback
 

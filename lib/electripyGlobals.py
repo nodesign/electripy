@@ -57,7 +57,7 @@ from boards.weio import wirings
 #from boards.uper import uper
 
 #board = dummy.Board("/dev/ttyACM0")
-targetBoard = weio.Board()
+targetBoard = weio
 
 #board = uper.Board()
 

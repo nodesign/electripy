@@ -49,10 +49,10 @@ import uperDriver
 
 """ weio board for testing purposes """
 class Board():
-    def __init__(self, serial = "/dev/ttyACM0"):
+    def __init__(self, internalCallBack, serial = "/dev/ttyACM0"):
         self.name = 'weio'
         print serial
-        self.uper = uperDriver.UPER(serial_port=serial)
+        self.uper = uperDriver.UPER(internalCallBack, serial_port=serial)
         
     def getBoardName(self):
         return self.name
@@ -97,8 +97,20 @@ class Board():
         self.uper.pwm0_begin(PWM_PERIOD)
         self.uper.pwm1_begin(PWM_PERIOD)
         
-    def mainInterrupt(self, data):
-        print "Main Interrupt launched", data
+    def attachInterrupt(self, interrupt):
+        print "Interrupt attached on %d %d %d" % (interrupt.myid, pins[interrupt.pin], interrupt.mode)
+        self.uper.attachInterrupt(interrupt.myid, pins[interrupt.pin], interrupt.mode)
+    
+    def detachInterrupt(self, interrupt):
+        self.uper.detachInterrupt(interrupt.myid)
+
+    def getAvailableInterruptId(self) :
+        for i in range(0,HARD_INTERRUPTS):
+            if self.interrupts[i] == None:
+                return i
+        print "weioBoard.getAvailableInterruptId, there is only %s interrupts available" % HARD_INTERRUPTS 
+        return None
+
 
 ####################################################### SPECIFIC BOARD FUNCTIONS
     def pwmBegin(self, pin):
@@ -106,3 +118,5 @@ class Board():
             self.uper.pwm0_begin(PWM_PERIOD)
         elif ((pin >= pwms[3]) and (pin <= pwms[-1])):
             self.uper.pwm1_begin(PWM_PERIOD)
+
+            
