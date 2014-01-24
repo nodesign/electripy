@@ -44,62 +44,59 @@
 #
 ###
 
-"""
-    This module holds all global variable definitions.
-    These globals can be imported, used and shared between all the modules of the library
-"""
+from lib.electripyIO import ElectripyIO
 
 ###
-# Global board
+# User API functions for GPIO
 ###
-from boards.weio import weio
-from boards.weio import wirings
-#from boards.uper import uper
 
-targetBoard = weio
+epyIO = ElectripyIO()
 
-#board = uper.Board()
+def getBoardName():
+    return epyIO.getBoardName()
 
-###
-# Global Macros
-###
-HIGH = wirings.HIGH
-LOW = wirings.LOW
+def pinMode(pin, mode):
+    return epyIO.pinMode(pin,mode)
+        
+def digitalWrite(pin, state):
+    return epyIO.digitalWrite(pin, state)
 
-INPUT_PULLUP = wirings.INPUT_PULLUP
-INPUT_PULLDOWN = wirings.INPUT_PULLDOWN 
-INPUT_HIGHZ = wirings.INPUT_HIGHZ
-INPUT_ADC = wirings.INPUT_ADC
-OUTPUT = wirings.OUTPUT
-OUTPUT_PWM = wirings.OUTPUT_PWM
+def digitalRead(pin):
+    return epyIO.digitalRead(pin)
 
-# Value is in microseconds
-PWM_PERIOD = wirings.PWM_PERIOD
-# This is constant of maximum PXM period limit
-PWM_PERIOD_LIMIT_CONST = wirings.PWM_PERIOD_LIMIT_CONST
-# make sure that this value is always inferior to PWM_PERIOD
-PWM_LIMIT = wirings.PWM_LIMIT
+def analogRead(pin):
+    return epyIO.analogRead(pin)
 
+def pwmWrite(pin, value):
+    return epyIO.pwmWrite(pin,value)
 
-# GPIOs, all pins go here
-pins = wirings.pins
+def analogWrite(pin, value):
+    """Defining synonime of pwmWrite to match arduino syntax"""
+    return epyIO.pwmWrite(pin,value)
+    
+def setPwmPeriod(period):
+    return epyIO.setPwmPeriod(period)
+    
+def setPwmLimit(limit):
+    return epyIO.setPwmLimit(limit)
 
-# ADC pins
-adcs = wirings.adcs
+def setPwmPeriod(period):
+    return epyIO.setPwmPeriod(period)
 
-# PWM pins
-pwms = wirings.pwms
+def setPwmLimit(limit):
+    return epyIO.setPwmLimit(limit)
 
-# Interrupt modes
-# HIGH and LOW were already declared
-# LOW 0 
-# HIGH 1
-CHANGE = wirings.CHANGE
-RISING = wirings.RISING
-FALLING = wirings.FALLING
-
-# number of hard interrupts
-HARD_INTERRUPTS = wirings.HARD_INTERRUPTS
-
-# String as response from controler
-interruptType = wirings.interruptType
+def attachInterrupt(pin, mode, callback):
+    return epyIO.attachInterrupt(pin, mode, callback)
+    
+def detachInterrupt(pin):
+    return epyIO.detachInterrupt(pin)
+    
+def delay(period):
+    return epyIO.delay(period)
+    
+def proportion(value,istart,istop,ostart,ostop) :
+    return epyIO(value,istart,istop,ostart,ostop)
+    
+def stop(): 
+    return epyIO.stop()

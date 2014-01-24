@@ -235,6 +235,13 @@ class ElectripyIO():
     def proportion(self, value,istart,istop,ostart,ostop) :
         """This is port of Processing map function. It's useful to make proportion calculation"""
         return float(ostart) + (float(ostop) - float(ostart)) * ((float(value) - float(istart)) / (float(istop) - float(istart)))
+        
+    def stop(self): 
+        """Procedure tp stop the board"""
+        res = None
+        if hasattr(self.board, 'stop'):
+            res = self.board.stop()
+        return res
 
 # This is class that stores all data regarding interrupt events
 class Interrupt():

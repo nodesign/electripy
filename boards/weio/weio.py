@@ -76,7 +76,7 @@ class Board():
             print "weioBoard.pinMode(pin, mode) has been called with parameters: %d, %d" % (pin, mode)
         
     def digitalRead(self, pin):
-        print "weioBoard.digitalRead(pin) has been called with parameter: %d" % pin
+        #print "weioBoard.digitalRead(pin) has been called with parameter: %d" % pin
         return self.uper.digitalRead(pins[pin])
         
     def analogRead(self, pin):
@@ -110,7 +110,9 @@ class Board():
                 return i
         print "weioBoard.getAvailableInterruptId, there is only %s interrupts available" % HARD_INTERRUPTS 
         return None
-
+    
+    def stop(self):
+        self.uper.stop()
 
 ####################################################### SPECIFIC BOARD FUNCTIONS
     def pwmBegin(self, pin):
