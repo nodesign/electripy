@@ -80,7 +80,7 @@ class Board():
         return self.uper.digitalRead(pins[pin])
         
     def analogRead(self, pin):
-        print "weioBoard.analogRead(pin) has been called with parameter: %d" % pin
+        #print "weioBoard.analogRead(pin) has been called with parameter: %d" % pin
         adcPin = adcs.index(pin)
         return self.uper.analogRead(adcPin)
         

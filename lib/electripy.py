@@ -45,6 +45,7 @@
 ###
 
 from lib.electripyIO import ElectripyIO
+from lib.electripyGlobals import *
 
 ###
 # User API functions for GPIO
