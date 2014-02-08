@@ -44,12 +44,13 @@
 #
 ###
 
-from wirings import *
+from wirings import wirings
 
 """ Dummy board for testing purposes """
 class Board():
     def __init__(self):
         self.name = 'dummy'
+        print "Print pins", wirings.pins
 
     def digitalWrite(self, pin, state):
         print "dummyBoard.digitalWrite(pin, state) has been called with parameters: %d, %d" % (pin, state)

@@ -66,16 +66,36 @@
 #   <------- 20 ms ----->
 ###
 
-
-from weioLib.weioIO import setPwmPeriod, pwmWrite, setPwmLimit, proportion
+###
+# Controling servo motor with PWM signal
+# Pulse length is constant of 20ms, variate impulse from 1ms to 2ms
+#
+#   +---+                +---+
+#   |   |                |   |
+#   |   |                |   |
+#   |   |                |   |
+#---+   +----------------+   +------
+# -->   <--1 ms = 5%
+#   <-------- 20 ms ----> 
+#
+#
+#   +------+            +------+
+#   |      |            |      |
+#   |      |            |      |
+#   |      |            |      |
+#---+      +------------+      +------
+# -->      <--2 ms = 10%
+#   <------- 20 ms ----->
+###
 
 class Servo:
     
-    def __init__(self):
+    def __init__(self, board):
         # Set 20ms signal length for PWM
-        setPwmPeriod(20000)
+        self.board = board
+        self.board.setPwmPeriod(20000)
         # Set maximum precision for this freq
-        setPwmLimit(19999)
+        self.board.setPwmLimit(19999)
         # Down limit frequency expressed in uS
         self.downLimit = 1000 # 5% of 20000
         self.upLimit = self.downLimit*2 # 10% of 20000
@@ -86,10 +106,10 @@ class Servo:
 
     def write(self, pin, data):
         # Write to coresponding servo motor
-        val = int(proportion(data, self.minAngle,self.maxAngle, self.downLimit, self.upLimit))
+        val = int(self.board.proportion(data, self.minAngle,self.maxAngle, self.downLimit, self.upLimit))
         self.readuS = val
         self.angle = data
-        pwmWrite(pin, 19999-self.readuS)
+        self.board.pwmWrite(pin, 19999-self.readuS)
         
     def setMinLimit(self, val):
         self.downLimit = val

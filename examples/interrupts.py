@@ -5,7 +5,7 @@ print "Board name : ", getBoardName()
 
 print "INTERRUPTS TEST **************************"
 def hello(data):
-    print "interrupt ", interruptType[data]
+    print "interrupt ", INTERRUPT_TYPE[data]
 
 attachInterrupt(25, CHANGE, hello)
 

@@ -43,27 +43,38 @@
 # Drasko DRASKOVIC <drasko.draskovic@gmail.com>
 #
 ###
-from lib.electripyGlobals import *
-import time
 
+import time
+import signal
+import sys
 ###
 # User API functions for GPIO
 ###
 
 class ElectripyIO():
     
-    def __init__(self):
-        self.board = targetBoard.Board(self.mainInterrupt)
-            
+    def __init__(self, boardName):
+        boardObj = __import__(boardName, fromlist=[''])
+        self.board = boardObj.Board(self.mainInterrupt)
+        self.wirings = self.board.wirings
+        
+        """Assure that program is closed properly if signal is received"""
+        signal.signal(signal.SIGINT, self.signal_handler)
+        
         self.declaredPins = []
-        for i in range(0,len(pins)):
+        for i in range(0,len(self.wirings.pins)):
             self.declaredPins.append(-1)
             
         self.interrupts = []
-        for i in range(0, HARD_INTERRUPTS):
+        for i in range(0, self.wirings.HARD_INTERRUPTS):
             # 1 is available
             self.interrupts.append(None)
-
+            
+    def signal_handler(self, signal, frame):
+        print "\nStopping electronics and exiting program"
+        self.stop()
+        sys.exit(0)
+        
     def mainInterrupt(self, data):
         myid = data[1][0]
         for inter in self.interrupts:
@@ -106,9 +117,9 @@ class ElectripyIO():
     def digitalWrite(self, pin, state):
         res = None
         if hasattr(self.board, 'digitalWrite'):
-            if self.declaredPins[pin] != OUTPUT:
-                self.board.pinMode(pin, OUTPUT)
-                self.declaredPins[pin] = OUTPUT
+            if self.declaredPins[pin] != self.wirings.OUTPUT:
+                self.board.pinMode(pin, self.wirings.OUTPUT)
+                self.declaredPins[pin] = self.wirings.OUTPUT
     
             res = self.board.digitalWrite(pin, state)
         return res
@@ -117,43 +128,44 @@ class ElectripyIO():
         res = None
         if hasattr(self.board, 'digitalRead'):
             # Force input mode (High Impedance) if input was not declared
-            if (self.declaredPins[pin] != INPUT_HIGHZ) and (self.declaredPins[pin] != INPUT_PULLUP) and (self.declaredPins[pin] != INPUT_PULLDOWN) :
-                self.board.pinMode(pin, INPUT_HIGHZ)
-                self.declaredPins[pin] = INPUT_HIGHZ
+            if (self.declaredPins[pin] != self.wirings.INPUT_HIGHZ) and (self.declaredPins[pin] != self.wirings.INPUT_PULLUP) and (self.declaredPins[pin] != self.wirings.INPUT_PULLDOWN) :
+                self.board.pinMode(pin, self.wirings.INPUT_HIGHZ)
+                self.declaredPins[pin] = self.wirings.INPUT_HIGHZ
             res = self.board.digitalRead(pin)
         return res
     
     def analogRead(self, pin):
         res = None
         if hasattr(self.board, 'analogRead'):
-            if ((pin >= adcs[0]) and (pin <= adcs[-1])):
-                if self.declaredPins[pin] != INPUT_ADC:
-                    self.declaredPins[pin] = INPUT_ADC
-                    self.board.pinMode(pin, INPUT_ADC)
-                res = self.board.analogRead(pin)    
+            if ((pin >= self.wirings.adcs[0]) and (pin <= self.wirings.adcs[-1])):
+                if self.declaredPins[pin] != self.wirings.INPUT_ADC:
+                    self.declaredPins[pin] = self.wirings.INPUT_ADC
+                    self.board.pinMode(pin, self.wirings.INPUT_ADC)
+                res = self.board.analogRead(pin)
             else:
-                print "Pin %d is not ADC pin" % pin           
+                print "Pin %d is not ADC pin" % pin
         return res
     
     def pwmWrite(self, pin, value):
         res = None
         if hasattr(self.board, 'pwmWrite'):
-            if (pin >= pwms[0]) and (pin <= pwms[-1]):
-                if self.declaredPins[pin] != OUTPUT_PWM:
-                    self.declaredPins[pin] = OUTPUT_PWM
-                    self.board.pinMode(pin, OUTPUT_PWM)
+            if (pin >= self.wirings.pwms[0]) and (pin <= self.wirings.pwms[-1]):
+                if self.declaredPins[pin] != self.wirings.OUTPUT_PWM:
+                    self.declaredPins[pin] = self.wirings.OUTPUT_PWM
+                    self.board.pinMode(pin, self.wirings.OUTPUT_PWM)
                 
                 # value limiters
                 if (value < 0) :
                     value = 0
-                if (value > PWM_LIMIT):
-                    value = PWM_LIMIT
+                if (value > self.wirings.PWM_LIMIT):
+                    value = self.wirings.PWM_LIMIT
                 
                 # do proportion calculus
                 # People think in bit precision rather in microseconds. It's common to connect sensor outputs to pwm
                 # so we have to make a small proportion calculus here to make interface more friendly
                 # for example if period is 1000us and limit 255 (8bit), 1000 will be divided to 255 steps to drive pwm
-                out = self.proportion(value, 0, PWM_LIMIT, 0, PWM_PERIOD)
+                out = self.proportion(value, 0, self.wirings.PWM_LIMIT, 0, self.wirings.PWM_PERIOD)
+                #print int(out), self.wirings.PWM_LIMIT, self.wirings.PWM_PERIOD
                 res = self.board.pwmWrite(pin, int(out))
             else :
                 print "Pin %d is not PWM pin" % pin
@@ -170,42 +182,25 @@ class ElectripyIO():
     def setPwmPeriod(self, period):
         res = None
         if hasattr(self.board, 'setPwmPeriod'):
-            if ((period >= 0) and (period <= PWM_PERIOD_LIMIT_CONST)): 
-                PWM_PERIOD = int(period)
-                res = self.board.setPwmPeriod(period)
+            if ((period >= 0) and (period <= self.wirings.PWM_PERIOD_LIMIT_CONST)): 
+                self.wirings.PWM_PERIOD = int(period)
+                res = self.board.setPwmPeriod(self.wirings.PWM_PERIOD)
             else :
-                print "electripyError: PWM period can be only between 0-" % PWM_PERIOD_LIMIT_CONST
+                print "electripyError: PWM period can be only between 0-%s" % self.wirings.PWM_PERIOD_LIMIT_CONST
                 
         print "electripyError: Board %s has no function setPwmPeriod()" % self.board.name
         return res
         
     def setPwmLimit(self, limit):
         res = None
-        if hasattr(self.board, 'setPwmPeriod'):
-            if ((limit > 0) and (limit <= PWM_LIMIT)):
-                PWM_LIMIT = int(limit)
-            else :
-                print "electripyError: PWM period can be only between 1-" % PWM_PERIOD_LIMIT_CONST
-        print "electripyError: Board %s has no function setPwmLimit()" % self.board.name
-        return res
-
-    def setPwmPeriod(self, period):
-        res = None
-        if hasattr(self.board, 'setPwmPeriod'):
-            res = self.board.setPwmPeriod(period)
-        return res
-
-    def setPwmLimit(self, limit):
-        res = None
-        if hasattr(self.board, 'setPwmLimit'):
-            res = self.board.setPwmLimit(limit)
+        res = self.wirings.PWM_LIMIT = int(limit)
         return res
 
     def getAvailableInterruptId(self) :
-        for i in range(0,HARD_INTERRUPTS):
+        for i in range(0,self.wirings.HARD_INTERRUPTS):
             if self.interrupts[i] == None:
                 return i
-        print "weioBoard.getAvailableInterruptId, there is only %s interrupts available" % HARD_INTERRUPTS 
+        print "weioBoard.getAvailableInterruptId, there is only %s interrupts available" % self.wirings.HARD_INTERRUPTS 
         return None
 
     def attachInterrupt(self, pin, mode, callback):
@@ -250,4 +245,3 @@ class Interrupt():
         self.pin = pin
         self.mode = mode
         self.callback = callback
-

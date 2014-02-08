@@ -45,16 +45,43 @@
 ###
 
 from lib.electripyIO import ElectripyIO
-from lib.electripyGlobals import *
+
+###
+# User GLOBALS
+###
+
+# Define board here
+epyIO = ElectripyIO("boards.weio.weio")
+
+HIGH = epyIO.wirings.HIGH
+LOW = epyIO.wirings.LOW
+
+INPUT_PULLUP = epyIO.wirings.INPUT_PULLUP
+INPUT_PULLDOWN = epyIO.wirings.INPUT_PULLDOWN
+INPUT_HIGHZ = epyIO.wirings.INPUT_HIGHZ
+INPUT_ADC = epyIO.wirings.INPUT_ADC
+OUTPUT = epyIO.wirings.OUTPUT
+OUTPUT_PWM = epyIO.wirings.OUTPUT_PWM
+
+# Interrupt modes
+# HIGH and LOW were already declared
+# LOW 0 
+# HIGH 1
+CHANGE = epyIO.wirings.CHANGE
+RISING = epyIO.wirings.RISING
+FALLING = epyIO.wirings.FALLING
+
+INTERRUPT_TYPE = epyIO.wirings.interruptType
 
 ###
 # User API functions for GPIO
 ###
 
-epyIO = ElectripyIO()
-
 def getBoardName():
     return epyIO.getBoardName()
+    
+def getBoard():
+    return epyIO
 
 def pinMode(pin, mode):
     return epyIO.pinMode(pin,mode)
@@ -79,13 +106,11 @@ def setPwmPeriod(period):
     return epyIO.setPwmPeriod(period)
     
 def setPwmLimit(limit):
+    print "SETTING LIM1", limit
     return epyIO.setPwmLimit(limit)
 
 def setPwmPeriod(period):
     return epyIO.setPwmPeriod(period)
-
-def setPwmLimit(limit):
-    return epyIO.setPwmLimit(limit)
 
 def attachInterrupt(pin, mode, callback):
     return epyIO.attachInterrupt(pin, mode, callback)
@@ -97,7 +122,7 @@ def delay(period):
     return epyIO.delay(period)
     
 def proportion(value,istart,istop,ostart,ostop) :
-    return epyIO(value,istart,istop,ostart,ostop)
+    return epyIO.proportion(value,istart,istop,ostart,ostop)
     
 def stop(): 
     return epyIO.stop()
