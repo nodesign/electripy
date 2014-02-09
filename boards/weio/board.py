@@ -66,39 +66,39 @@ class Board():
 
     def digitalWrite(self, pin, state):
         #print "weioBoard.digitalWrite(pin, state) has been called with parameters: %d, %d" % (pin, state)
-        self.uper.digitalWrite(self.wirings.pins[pin], state)
+        self.uper.digitalWrite(self.wirings.PINS[pin], state)
         
     def pinMode(self, pin, mode) :
         """Sets io mode for pin. Available modes are : INPUT_HIGHZ, INPUT_PULLDOWN, INPUT_PULLUP, INPUT_ADC, OUTPUT, OUTPUT_PWM"""
         if (mode == self.wirings.INPUT_ADC) or (mode == self.wirings.OUTPUT_PWM):
-            self.uper.setSecondary(self.wirings.pins[pin])
+            self.uper.setSecondary(self.wirings.PINS[pin])
             #print "Setting secondary interface on %d pin" % (pin)
             if (mode == self.wirings.OUTPUT_PWM):
                 self.pwmBegin(pin)
                 #print "init pwm"
         else :
-            self.uper.setPrimary(self.wirings.pins[pin])
+            self.uper.setPrimary(self.wirings.PINS[pin])
             #print "weioBoard.setPrimary(pin, mode) has been called with parameters: %d" % (pin)
-            self.uper.pinMode(self.wirings.pins[pin], mode)
+            self.uper.pinMode(self.wirings.PINS[pin], mode)
             #print "weioBoard.pinMode(pin, mode) has been called with parameters: %d, %d" % (pin, mode)
         
     def digitalRead(self, pin):
         #print "weioBoard.digitalRead(pin) has been called with parameter: %d" % pin
-        return self.uper.digitalRead(self.wirings.pins[pin])
+        return self.uper.digitalRead(self.wirings.PINS[pin])
         
     def analogRead(self, pin):
         #print "weioBoard.analogRead(pin) has been called with parameter: %d" % pin
-        adcPin = self.wirings.adcs.index(pin)
+        adcPin = self.wirings.ADCS.index(pin)
         return self.uper.analogRead(adcPin)
         
     def pwmWrite(self,pin, value):
-        if ((pin >= self.wirings.pwms[0]) and (pin <= self.wirings.pwms[2])):
-            pwmPin = self.wirings.pwms.index(pin)
+        if ((pin >= self.wirings.PWMS[0]) and (pin <= self.wirings.PWMS[2])):
+            pwmPin = self.wirings.PWMS.index(pin)
             if (self.pwmBeginCalled is False):
                 self.setPwmPeriod(self.wirings.PWM_PERIOD)
             self.uper.pwm0_set(pwmPin, value)
-        elif ((pin >= self.wirings.pwms[3]) and (pin <= self.wirings.pwms[-1])):
-            pwmPin = abs(3-self.wirings.pwms.index(pin))
+        elif ((pin >= self.wirings.PWMS[3]) and (pin <= self.wirings.PWMS[-1])):
+            pwmPin = abs(3-self.wirings.PWMS.index(pin))
             if (self.pwmBeginCalled is False):
                 self.setPwmPeriod(self.wirings.PWM_PERIOD)
             self.uper.pwm1_set(pwmPin, value)
@@ -111,8 +111,8 @@ class Board():
         self.pwmBeginCalled = True
         
     def attachInterrupt(self, interrupt):
-        #print "Interrupt attached on %d %d %d" % (interrupt.myid, self.wirings.pins[interrupt.pin], interrupt.mode)
-        self.uper.attachInterrupt(interrupt.myid, self.wirings.pins[interrupt.pin], interrupt.mode)
+        #print "Interrupt attached on %d %d %d" % (interrupt.myid, self.wirings.PINS[interrupt.pin], interrupt.mode)
+        self.uper.attachInterrupt(interrupt.myid, self.wirings.PINS[interrupt.pin], interrupt.mode)
     
     def detachInterrupt(self, interrupt):
         self.uper.detachInterrupt(interrupt.myid)
@@ -129,9 +129,9 @@ class Board():
 
 ####################################################### SPECIFIC BOARD FUNCTIONS
     def pwmBegin(self, pin):
-        if ((pin >= self.wirings.pwms[0]) and (pin <= self.wirings.pwms[2])):
+        if ((pin >= self.wirings.PWMS[0]) and (pin <= self.wirings.PWMS[2])):
             self.uper.pwm0_begin(self.wirings.PWM_PERIOD)
-        elif ((pin >= self.wirings.pwms[3]) and (pin <= self.wirings.pwms[-1])):
+        elif ((pin >= self.wirings.PWMS[3]) and (pin <= self.wirings.PWMS[-1])):
             self.uper.pwm1_begin(self.wirings.PWM_PERIOD)
 
             

@@ -62,7 +62,7 @@ class ElectripyIO():
         signal.signal(signal.SIGINT, self.signal_handler)
         
         self.declaredPins = []
-        for i in range(0,len(self.wirings.pins)):
+        for i in range(0,len(self.wirings.PINS)):
             self.declaredPins.append(-1)
             
         self.interrupts = []
@@ -81,28 +81,6 @@ class ElectripyIO():
             if inter.myid == myid:
                 inter.callback(data[1][1])
                 break
-    # 
-    # def mainInterrupt(self, data):
-    #     """ Do following stuff:
-    #     1) mainInterrupt pre-call generic stuff (generic stuff before calling board's driver IO)
-    #     2) call board driver's IO function (custom for every board)
-    #     3) mainInterrupt post-call generic stuff
-    #     """
-    #     result = None
-    #     
-    #     #do some pre-init
-    # 
-    #     #Check if the board implements this function
-    #        
-    #     myid = data[1][0]
-    #     for inter in self.interrupts:
-    #        if inter.myid == myid:
-    #            inter.callback(data[1][1])
-    #            break
-    # 
-    #     #do some post-init
-    # 
-    #     return result
         
     def getBoardName(self):
         return self.board.getBoardName()
@@ -137,7 +115,7 @@ class ElectripyIO():
     def analogRead(self, pin):
         res = None
         if hasattr(self.board, 'analogRead'):
-            if ((pin >= self.wirings.adcs[0]) and (pin <= self.wirings.adcs[-1])):
+            if ((pin >= self.wirings.ADCS[0]) and (pin <= self.wirings.ADCS[-1])):
                 if self.declaredPins[pin] != self.wirings.INPUT_ADC:
                     self.declaredPins[pin] = self.wirings.INPUT_ADC
                     self.board.pinMode(pin, self.wirings.INPUT_ADC)
@@ -149,7 +127,7 @@ class ElectripyIO():
     def pwmWrite(self, pin, value):
         res = None
         if hasattr(self.board, 'pwmWrite'):
-            if (pin >= self.wirings.pwms[0]) and (pin <= self.wirings.pwms[-1]):
+            if (pin >= self.wirings.PWMS[0]) and (pin <= self.wirings.PWMS[-1]):
                 if self.declaredPins[pin] != self.wirings.OUTPUT_PWM:
                     self.declaredPins[pin] = self.wirings.OUTPUT_PWM
                     self.board.pinMode(pin, self.wirings.OUTPUT_PWM)

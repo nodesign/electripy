@@ -51,7 +51,7 @@ from lib.electripyIO import ElectripyIO
 ###
 
 # Define board here
-epyIO = ElectripyIO("boards.weio.weio")
+epyIO = ElectripyIO("boards.weio.board")
 
 HIGH = epyIO.wirings.HIGH
 LOW = epyIO.wirings.LOW
@@ -71,7 +71,7 @@ CHANGE = epyIO.wirings.CHANGE
 RISING = epyIO.wirings.RISING
 FALLING = epyIO.wirings.FALLING
 
-INTERRUPT_TYPE = epyIO.wirings.interruptType
+INTERRUPT_TYPE = epyIO.wirings.INTERRUPT_TYPE
 
 ###
 # User API functions for GPIO
