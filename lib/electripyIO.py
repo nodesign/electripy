@@ -52,7 +52,6 @@ import sys
 ###
 
 class ElectripyIO():
-    
     def __init__(self, boardName):
         boardObj = __import__(boardName, fromlist=[''])
         self.board = boardObj.Board(self.mainInterrupt)

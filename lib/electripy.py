@@ -44,6 +44,32 @@
 #
 ###
 
+"""
+    A BIG FAT WARNING:
+    electripy.py is kind of synthetic sugar, a wrapper around electripyIO.py class.
+
+    This allows us to use:
+    form electripy import *
+    construct in user programs, which in effect allows using simple methods
+    like digitalWrite() in these user programs directly, since they become global functions.
+
+    However, "import *" is dangerous in many ways, so use it with conscious!
+
+    Note well in the documentation to your users that all the varaibles and functions
+    listed here become globals in their programs, so take a reserved namespace.
+    Addressing these globals from user functions must be pre-declared with 'global' keyword.
+    Otherwise user will address/create local object thinking that he/she modifies global variable from the library.
+
+    As a bootom line:
+    1) all keywords below are reserved and not to be used as local variable names in user programs
+    2) they are exposed as globals in user program
+    3) when modifying them from user program function user 'global' keyword to notify Python that you want to modify
+        global variable. For example:
+        function f():
+            global HIGH
+            HIGH = 30
+"""
+
 from lib.electripyIO import ElectripyIO
 
 ###
