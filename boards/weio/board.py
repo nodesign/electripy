@@ -105,7 +105,7 @@ class Board():
             
     def setPwmPeriod(self, period):
         # UPER has 2 banks, activate all banks. Use board specific functions to call specific banks
-        #print "PERIOD ", period
+        print "PERIOD ", period
         self.uper.pwm0_begin(period)
         self.uper.pwm1_begin(period)
         self.pwmBeginCalled = True

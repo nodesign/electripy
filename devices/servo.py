@@ -90,9 +90,9 @@
 
 class Servo:
     
-    def __init__(self, board):
+    def __init__(self, myboard):
         # Set 20ms signal length for PWM
-        self.board = board
+        self.board = myboard
         self.board.setPwmPeriod(20000)
         # Set maximum precision for this freq
         self.board.setPwmLimit(19999)
@@ -106,10 +106,10 @@ class Servo:
 
     def write(self, pin, data):
         # Write to coresponding servo motor
-        val = int(self.board.proportion(data, self.minAngle,self.maxAngle, self.downLimit, self.upLimit))
+        val = int(self.board.proportion(data, self.minAngle, self.maxAngle, self.downLimit, self.upLimit))
         self.readuS = val
         self.angle = data
-        self.board.pwmWrite(pin, 19999-self.readuS)
+        self.board.pwmWrite(pin, self.readuS)
         
     def setMinLimit(self, val):
         self.downLimit = val

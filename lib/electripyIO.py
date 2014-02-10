@@ -165,8 +165,8 @@ class ElectripyIO():
                 res = self.board.setPwmPeriod(self.wirings.PWM_PERIOD)
             else :
                 print "electripyError: PWM period can be only between 0-%s" % self.wirings.PWM_PERIOD_LIMIT_CONST
-                
-        print "electripyError: Board %s has no function setPwmPeriod()" % self.board.name
+        else :        
+            print "electripyError: Board %s has no function setPwmPeriod()" % self.board.name
         return res
         
     def setPwmLimit(self, limit):
